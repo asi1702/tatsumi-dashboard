@@ -543,3 +543,9 @@
 
 </body>
 </html>
+
+
+## Сайт
+https://asi1702.github.io/tatsumi-dashboard/
+
+Обновить: заменить `index.html` и сделать push в `main`.

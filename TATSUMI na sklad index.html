@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд закупок: Tatsumi</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-purple: #9f7aea;
+            --accent-orange: #ed8936;
+            --border-color: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 30px;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1250px; margin: 0 auto; }
+
+        .header { margin-bottom: 30px; }
+        .header h1 { font-size: 28px; font-weight: 700; }
+        .header p { color: var(--text-muted); font-size: 16px; }
+
+        /* Сетка верхних карточек */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title { font-size: 14px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 10px; }
+        .card-value { font-size: 32px; font-weight: 700; margin-bottom: 5px; }
+        .card-subtext { font-size: 14px; color: var(--text-muted); }
+        .total { border-left: 5px solid var(--accent-blue); }
+        .a-cat { border-left: 5px solid var(--accent-purple); }
+        .b-cat { border-left: 5px solid var(--accent-green); }
+
+        /* Графики */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 768px) { .charts-section { grid-template-columns: 1fr; } }
+        
+        .chart-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            height: 300px;
+        }
+        .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; }
+        .chart-wrapper { position: relative; height: calc(100% - 30px); width: 100%; }
+
+        /* Блок суммарных итогов */
+        .summary-section {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            border-top: 4px solid var(--accent-blue);
+            margin-bottom: 30px;
+        }
+        .summary-title { font-size: 20px; font-weight: 700; margin-bottom: 15px; color: var(--text-main); }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) { .summary-grid { grid-template-columns: 1fr; } }
+        
+        .summary-box {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .summary-box.min { border-left: 5px solid var(--accent-purple); }
+        .summary-box.max { border-left: 5px solid var(--accent-orange); }
+        
+        .summary-box h3 { font-size: 14px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+        .summary-box .val { font-size: 26px; font-weight: 700; margin-bottom: 5px; }
+        .summary-box.min .val { color: var(--accent-purple); }
+        .summary-box.max .val { color: var(--accent-orange); }
+        .summary-box .sub { font-size: 14px; color: var(--text-muted); }
+
+        /* Секция с интерактивом */
+        .interactive-section {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .interactive-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .interactive-header h2 { font-size: 20px; }
+        .btn-group { display: flex; gap: 10px; }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: #fff;
+            color: var(--text-main);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        button:hover { background-color: #f8fafc; border-color: #cbd5e0; }
+        button.primary { background-color: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+        button.primary:hover { background-color: #3182ce; }
+
+        /* Сетка складов */
+        .warehouses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .warehouse-card {
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .warehouse-card.disabled { opacity: 0.6; background-color: #edf2f7; }
+
+        .wh-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .wh-title { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        
+        /* Переключатель (Toggle) */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e0; transition: .4s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Ползунки */
+        .slider-group { margin-bottom: 15px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; }
+        .slider-label span.value { font-weight: 700; color: var(--text-main); }
+        
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; margin-bottom: 5px;
+        }
+        input[type=range]:focus { outline: none; }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%;
+            background: var(--accent-blue); cursor: pointer; margin-top: -7px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #cbd5e0; border-radius: 2px;
+        }
+        
+        input[type=range]:disabled::-webkit-slider-thumb { background: #a0aec0; }
+        input[type=range]:disabled::-webkit-slider-runnable-track { background: #e2e8f0; }
+
+        /* Итоговые цифры склада */
+        .wh-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .wh-results div { display: flex; flex-direction: column; }
+        .wh-results strong { font-size: 15px; color: var(--text-main); }
+        .wh-results .a-val strong { color: var(--accent-purple); }
+        .wh-results .max-val strong { color: var(--accent-orange); }
+
+        .disclaimer { font-size: 12px; color: var(--text-muted); margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Дашборд: Анализ закупок Tatsumi</h1>
+        <p>Сводные данные и распределение коридоров закупок по складам</p>
+    </div>
+
+    <!-- Верхние карточки -->
+    <div class="grid">
+        <div class="card total">
+            <div class="card-title">Общий объем (A + B)</div>
+            <div class="card-value">3,332 млн. ₽</div>
+            <div class="card-subtext">Всего: 2 141 SKU</div>
+        </div>
+        <div class="card a-cat">
+            <div class="card-title">Категория A (Мин. порог)</div>
+            <div class="card-value">1,595 млн. ₽</div>
+            <div class="card-subtext">Объем: 935 SKU</div>
+        </div>
+        <div class="card b-cat">
+            <div class="card-title">Категория B (Доп. объем)</div>
+            <div class="card-value">1,737 млн. ₽</div>
+            <div class="card-subtext">Объем: 1 207 SKU</div>
+        </div>
+    </div>
+
+    <!-- Графики -->
+    <div class="charts-section">
+        <div class="chart-container">
+            <div class="chart-title">Распределение по сумме (млн. ₽)</div>
+            <div class="chart-wrapper">
+                <canvas id="sumChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">Распределение по количеству (SKU)</div>
+            <div class="chart-wrapper">
+                <canvas id="skuChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок суммарных итогов -->
+    <div class="summary-section">
+        <div class="summary-title">Суммарные итоги по включенным складам</div>
+        <div class="summary-grid">
+            <div class="summary-box min">
+                <h3>Общий минимум (по ползункам "Мин")</h3>
+                <div class="val" id="total-min-sum">0 ₽</div>
+                <div class="sub" id="total-min-sku">0 SKU</div>
+            </div>
+            <div class="summary-box max">
+                <h3>Общий максимум (по ползункам "Макс")</h3>
+                <div class="val" id="total-max-sum">0 ₽</div>
+                <div class="sub" id="total-max-sku">0 SKU</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Интерактивная секция -->
+    <div class="interactive-section">
+        <div class="interactive-header">
+            <h2>Симулятор распределения по складам</h2>
+            <div class="btn-group">
+                <button class="primary" onclick="resetAll()">Сбросить всё</button>
+            </div>
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">
+            Настройте коридор закупки для каждого склада. <b>Нижний ползунок</b> ограничен суммой по Категории А (1,595 млн. ₽), <b>верхний</b> — общим максимумом (3,332 млн. ₽). Система пересчитает объем в % и SKU.
+        </p>
+
+        <div class="warehouses-grid" id="warehousesGrid">
+            <!-- Склады будут сгенерированы через JS -->
+        </div>
+        <div class="disclaimer">
+            * Сумма по складам может превышать общий бюджет (3,332 млн. ₽), так как один и тот же товар может закупаться для разных регионов.
+        </div>
+    </div>
+</div>
+
+<script>
+    // Базовые данные
+    const SUM_A = 1595000; 
+    const MAX_SUM = 3332000; 
+    const TOTAL_SKU = 2141;
+
+    // Конфигурация складов
+    // ИСПРАВЛЕНИЕ: Для всех складов maxSum теперь равен 3332000 (100%)
+    const defaultWarehouses = [
+        { id: 'murmansk', name: 'Мурманск', active: true, minSum: 1595000, maxSum: 3332000 },
+        { id: 'petrozavodsk', name: 'Петрозаводск', active: true, minSum: 1595000, maxSum: 3332000 },
+        { id: 'arkhangelsk', name: 'Архангельск', active: true, minSum: 1595000, maxSum: 3332000 },
+        { id: 'vologda', name: 'Вологда', active: true, minSum: 1595000, maxSum: 3332000 },
+        { id: 'cherepovets', name: 'Череповец', active: true, minSum: 1595000, maxSum: 3332000 },
+        { id: 'novgorod', name: 'Новгород', active: true, minSum: 1595000, maxSum: 3332000 },
+        { id: 'pskov', name: 'Псков', active: false, minSum: 1595000, maxSum: 3332000 },
+        { id: 'smolensk', name: 'Смоленск', active: false, minSum: 1595000, maxSum: 3332000 }
+    ];
+
+    let warehouses = JSON.parse(JSON.stringify(defaultWarehouses));
+
+    // Функция форматирования
+    function formatMoney(value) {
+        return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(value);
+    }
+
+    // Отрисовка складов
+    function renderWarehouses() {
+        const grid = document.getElementById('warehousesGrid');
+        grid.innerHTML = '';
+
+        warehouses.forEach(wh => {
+            const card = document.createElement('div');
+            card.className = `warehouse-card ${wh.active ? '' : 'disabled'}`;
+            card.id = `card-${wh.id}`;
+
+            const minPct = ((wh.minSum / MAX_SUM) * 100).toFixed(1);
+            const minSku = Math.round((TOTAL_SKU / MAX_SUM) * wh.minSum);
+            
+            const maxPct = ((wh.maxSum / MAX_SUM) * 100).toFixed(1);
+            const maxSku = Math.round((TOTAL_SKU / MAX_SUM) * wh.maxSum);
+
+            card.innerHTML = `
+                <div class="wh-header">
+                    <div class="wh-title">${wh.name}</div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-${wh.id}" ${wh.active ? 'checked' : ''} onchange="toggleWarehouse('${wh.id}')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Мин. закупка (от Категории А)</span>
+                        <span class="value" id="min-val-${wh.id}">${formatMoney(wh.minSum)}</span>
+                    </div>
+                    <input type="range" id="min-range-${wh.id}" min="0" max="${MAX_SUM}" step="1000" value="${wh.minSum}" 
+                        ${!wh.active ? 'disabled' : ''} oninput="updateSlider('${wh.id}', 'min', this.value)">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Макс. закупка (до общего объема)</span>
+                        <span class="value" id="max-val-${wh.id}">${formatMoney(wh.maxSum)}</span>
+                    </div>
+                    <input type="range" id="max-range-${wh.id}" min="0" max="${MAX_SUM}" step="1000" value="${wh.maxSum}" 
+                        ${!wh.active ? 'disabled' : ''} oninput="updateSlider('${wh.id}', 'max', this.value)">
+                </div>
+
+                <div class="wh-results">
+                    <div class="a-val">
+                        <span style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Мин (Доля / SKU)</span>
+                        <strong id="res-min-pct-${wh.id}">${minPct}% / ${minSku} SKU</strong>
+                    </div>
+                    <div class="max-val">
+                        <span style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Макс (Доля / SKU)</span>
+                        <strong id="res-max-pct-${wh.id}">${maxPct}% / ${maxSku} SKU</strong>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        calculateTotals();
+    }
+
+    // Включение/выключение склада
+    function toggleWarehouse(id) {
+        const wh = warehouses.find(w => w.id === id);
+        wh.active = document.getElementById(`toggle-${id}`).checked;
+        
+        document.getElementById(`min-range-${id}`).disabled = !wh.active;
+        document.getElementById(`max-range-${id}`).disabled = !wh.active;
+        
+        const card = document.getElementById(`card-${id}`);
+        if (wh.active) card.classList.remove('disabled');
+        else card.classList.add('disabled');
+
+        calculateTotals();
+    }
+
+    // Обновление ползунков
+    function updateSlider(id, type, value) {
+        const wh = warehouses.find(w => w.id === id);
+        let val = parseInt(value);
+        
+        if (type === 'min') {
+            if (val < SUM_A) val = SUM_A; 
+            
+            if (val > wh.maxSum) {
+                wh.maxSum = val;
+                document.getElementById(`max-range-${id}`).value = val;
+                document.getElementById(`max-val-${id}`).textContent = formatMoney(val);
+            }
+            wh.minSum = val;
+            document.getElementById(`min-val-${id}`).textContent = formatMoney(val);
+            document.getElementById(`min-range-${id}`).value = val; 
+        } else {
+            if (val < wh.minSum) {
+                val = wh.minSum;
+                document.getElementById(`max-range-${id}`).value = val;
+            }
+            wh.maxSum = val;
+            document.getElementById(`max-val-${id}`).textContent = formatMoney(val);
+        }
+
+        const minPct = ((wh.minSum / MAX_SUM) * 100).toFixed(1);
+        const minSku = Math.round((TOTAL_SKU / MAX_SUM) * wh.minSum);
+        
+        const maxPct = ((wh.maxSum / MAX_SUM) * 100).toFixed(1);
+        const maxSku = Math.round((TOTAL_SKU / MAX_SUM) * wh.maxSum);
+
+        document.getElementById(`res-min-pct-${id}`).textContent = `${minPct}% / ${minSku} SKU`;
+        document.getElementById(`res-max-pct-${id}`).textContent = `${maxPct}% / ${maxSku} SKU`;
+
+        calculateTotals(); 
+    }
+
+    // Функция подсчета суммарных итогов
+    function calculateTotals() {
+        let totalMinSum = 0;
+        let totalMaxSum = 0;
+
+        warehouses.forEach(wh => {
+            if (wh.active) {
+                totalMinSum += wh.minSum;
+                totalMaxSum += wh.maxSum;
+            }
+        });
+
+        const totalMinSku = Math.round((TOTAL_SKU / MAX_SUM) * totalMinSum);
+        const totalMaxSku = Math.round((TOTAL_SKU / MAX_SUM) * totalMaxSum);
+
+        document.getElementById('total-min-sum').textContent = formatMoney(totalMinSum);
+        document.getElementById('total-min-sku').textContent = `${totalMinSku} SKU (сумма по складам)`;
+        
+        document.getElementById('total-max-sum').textContent = formatMoney(totalMaxSum);
+        document.getElementById('total-max-sku').textContent = `${totalMaxSku} SKU (сумма по складам)`;
+    }
+
+    // Сброс
+    function resetAll() {
+        warehouses = JSON.parse(JSON.stringify(defaultWarehouses));
+        renderWarehouses();
+    }
+
+    // Инициализация графиков
+    function initCharts() {
+        Chart.defaults.font.family = "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+        Chart.defaults.color = '#718096';
+
+        const labels = ['Категория A', 'Категория B'];
+        
+        new Chart(document.getElementById('sumChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: [1595, 1737],
+                    backgroundColor: ['#9f7aea', '#48bb78'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (c) => `${c.label}: ${c.raw} млн. ₽` } }
+                },
+                cutout: '70%'
+            }
+        });
+
+        new Chart(document.getElementById('skuChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Количество SKU',
+                    data: [935, 1207],
+                    backgroundColor: ['#9f7aea', '#48bb78'],
+                    borderRadius: 6,
+                    barThickness: 60
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#e2e8f0', drawBorder: false } },
+                    x: { grid: { display: false, drawBorder: false } }
+                }
+            }
+        });
+    }
+
+    // Запуск при загрузке
+    window.onload = () => {
+        renderWarehouses();
+        initCharts();
+    };
+
+</script>
+
+</body>
+</html>
